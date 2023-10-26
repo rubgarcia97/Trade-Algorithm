@@ -100,18 +100,15 @@ with open('./test.json','w') as file:
 # https://python.plainenglish.io/automate-your-crypto-trading-with-python-a-step-by-step-guide-to-building-a-binance-trading-bot-a658f565f0b2
 # https://github.com/binance/binance-signature-examples/blob/master/python/hmac_sha256_signature.py
 
+def pruebas(A,B,C):
+    return A+B+C
+
 if __name__=='__main__':
 
-    
-    with open("../../api_binance.json",'r') as file:
-        data = json.load(file)
-        apiKey = data.get('apiKey',None)
-        secretKey = data.get('secretKey',None)
+    params = {
+        "A" : 1,
+        "B" : 2,
+        "C" : 3
+    }
 
-    response = signed_request(http_method="GET", url_path='/api/v3/account')
-    response = [balance for balance in response['balances'] if float(balance['free']) != 0]
-
-    response = {'balances':response}
-
-    with open('./test.json','w') as file:
-        file.write(json.dumps(response, indent=4))
+    print(pruebas(**params))

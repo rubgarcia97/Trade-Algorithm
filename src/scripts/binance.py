@@ -41,20 +41,29 @@ class Client:
         return int(time.time() * 1000)
     
 
-    def dispatch_request(self, http_method):
+    def base_request(self, http_method, signed: bool):
 
         session = requests.Session()
-        session.headers.update(
-            {"Content-Type" : "application/json;charset=utf-8", "X-MBX-APIKEY": self.__apiKey}
-        )
 
-        return {
-            "GET" : session.get,
-            "DELETE" : session.delete,
-            "PUT" : session.put,
-            "POST" : session.post,
-        }.get(http_method, "GET")
-    
+        if signed:
+            session.headers.update(
+                {"Content-Type" : "application/json;charset=utf-8", "X-MBX-APIKEY": self.__apiKey}
+            )
+
+            return {
+                "GET" : session.get,
+                "DELETE" : session.delete,
+                "PUT" : session.put,
+                "POST" : session.post,
+            }.get(http_method, "GET")
+        
+        else:
+            return {
+                "GET" : session.get,
+                "DELETE" : session.delete,
+                "PUT" : session.put,
+                "POST" : session.post,
+            }.get(http_method, "GET")
 
 
 
@@ -75,14 +84,15 @@ class Pynance:
     
 
     def wallet(self,http_method,url_path,load_params={}):
+
         query_string = urlencode(load_params,True)
         if query_string:
             query_string = f"{query_string}&timestamp={self.client.get_timestamp()}"
         else:
             query_string = "timestamp={}".format(self.client.get_timestamp())
         
-        url = (self.URL + url_path + "?" + query_string + "&signature=" + Client().signature(query_string)
-
+        url = (
+            self.URL + url_path + "?" + query_string + "&signature=" + Client().signature(query_string)
         )
         
         print(f"{http_method} {url}")
@@ -90,16 +100,35 @@ class Pynance:
             "url": url,
             "params": {}
         }
-        response = Client().dispatch_request(http_method)(**params)
-        response = response.json()
-        #response = [balance for balance in response['balances'] if float(balance['free']) != 0]
+        response = Client().base_request(http_method,signed=True)(**params).json()
+        response = {'balances' : [balance for balance in response['balances'] if float(balance['free']) != 0]}
 
-        #response = {'balances' : response}
 
-        with open("./test.json", 'w') as file:
+        with open("../results/wallet.json", 'w') as file:
             file.write(json.dumps(response, indent=4))
+
+
+    def market_data(self, symbol:str, periods=None):
+        
+        endpoint = "/api/v3/ticker/price"
+
+        url = (
+            self.URL + endpoint 
+        )
+        params = {
+            "url" : url,
+            "params" : {
+                "symbol" : symbol
+            }
+        }
+        response = Client().base_request("GET",signed=False)(**params).json()
+
+        with open("../results/"+symbol+"_price.json", 'w') as file:
+            file.write(json.dumps(response, indent=4))
+
+
         
 
 if __name__=="__main__":
     
-    Pynance().wallet(http_method="GET", url_path='/api/v3/account')
+    Pynance().market_data(symbol="ETHUSDT")

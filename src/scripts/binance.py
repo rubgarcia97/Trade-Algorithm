@@ -6,6 +6,7 @@ import hmac
 import urllib
 import hashlib
 import time
+import datetime
 
 class Client:
 
@@ -121,14 +122,62 @@ class Pynance:
                 "symbol" : symbol
             }
         }
-        response = Client().base_request("GET",signed=False)(**params).json()
+
+        dict = {symbol:[]}
+        for lag in range(periods):
+
+            begin = time.time()
+
+            response = Client().base_request("GET",signed=False)(**params).json()
+            price = response["price"]
+            timestamp = Client().get_timestamp()
+
+            dict[symbol].append({"price": price, "timestamp":timestamp})
+
+            end = time.time()
+            print(end - begin)
+            
+
+
 
         with open("../results/"+symbol+"_price.json", 'w') as file:
-            file.write(json.dumps(response, indent=4))
+            file.write(json.dumps(dict, indent=4))
+    
 
+    def candlestick_data(
+            self,
+            symbol:str,
+            intervals:str,
+            **kwargs
+    ):
+        endpoint = "/api/v3/klines"
+        url = (
+            self.URL + endpoint
+        )
+        params = {
+            "url": url,
+            "params": {
+                "symbol": symbol,
+                "interval": intervals 
+            }
+        }
+        
+        data = {symbol:[]}
+        keys = ["openTime","OpenPrice","HighPrice","LowPrice","ClosePrice","Volume","CloseTime","QuoteAssetVolume","nTrades"]
+        response = Client().base_request("GET",signed=False)(**params).json()
+        
+        for row in response:
+            dict = {}
+            for i,key in enumerate(keys):
+                dict[key] = row[i]
+            data[symbol].append(dict)
 
+        
+        with open("../results/"+symbol+"_candlestick.json", 'w') as file:
+            file.write(json.dumps(data, indent=4))
+        
         
 
 if __name__=="__main__":
     
-    Pynance().market_data(symbol="ETHUSDT")
+    Pynance().candlestick_data(symbol="ETHUSDT",intervals="1s")

@@ -1,4 +1,5 @@
 from urllib.parse import urlencode
+from datetime import datetime
 
 import json
 import requests
@@ -6,7 +7,7 @@ import hmac
 import urllib
 import hashlib
 import time
-import datetime
+#import datetime
 
 class Client:
 
@@ -19,6 +20,7 @@ class Client:
 
         '''Extraccion de las credenciales en base a la ruta proporcionada desde el constructor'''
         self.__path = "../../api_binance.json"
+        self.URL = "https://api.binance.com"
 
         if self.__path is not None:
             with open(self.__path, 'r') as file:
@@ -42,11 +44,31 @@ class Client:
         return int(time.time() * 1000)
     
 
-    def base_request(self, http_method, signed: bool):
+    def base_request(self, http_method, signed: bool, endpoint:str, params=None):
 
-        session = requests.Session()
+        endpoint = endpoint
+        if params is None:
+            load_params = {}
+        else:
+            load_params = params
 
         if signed:
+            query_string = urlencode(load_params,True)
+            if query_string:
+                query_string = f"{query_string}&timestamp={self.get_timestamp()}"
+            else:
+                query_string = "timestamp={}".format(self.get_timestamp())
+            
+            url = (
+                self.URL + endpoint + "?" + query_string + "&signature=" + Client().signature(query_string)
+            )
+
+            params = {
+                "url": url,
+                "params": load_params
+            }
+
+            session = requests.Session()
             session.headers.update(
                 {"Content-Type" : "application/json;charset=utf-8", "X-MBX-APIKEY": self.__apiKey}
             )
@@ -56,15 +78,24 @@ class Client:
                 "DELETE" : session.delete,
                 "PUT" : session.put,
                 "POST" : session.post,
-            }.get(http_method, "GET")
-        
+            }.get(http_method, "GET")(**params).json()
+
         else:
+            url = (
+                self.URL + endpoint
+            )
+            params = {
+                "url" : url,
+                "params" : params
+            }
+            
+            session = requests.Session()
             return {
                 "GET" : session.get,
                 "DELETE" : session.delete,
                 "PUT" : session.put,
                 "POST" : session.post,
-            }.get(http_method, "GET")
+            }.get(http_method, "GET")(**params).json()
 
 
 
@@ -84,24 +115,9 @@ class Pynance:
         
     
 
-    def wallet(self,http_method,url_path,load_params={}):
+    def wallet(self):
 
-        query_string = urlencode(load_params,True)
-        if query_string:
-            query_string = f"{query_string}&timestamp={self.client.get_timestamp()}"
-        else:
-            query_string = "timestamp={}".format(self.client.get_timestamp())
-        
-        url = (
-            self.URL + url_path + "?" + query_string + "&signature=" + Client().signature(query_string)
-        )
-        
-        print(f"{http_method} {url}")
-        params = {
-            "url": url,
-            "params": {}
-        }
-        response = Client().base_request(http_method,signed=True)(**params).json()
+        response = Client().base_request(http_method="GET",signed=True,endpoint="/api/v3/account")
         response = {'balances' : [balance for balance in response['balances'] if float(balance['free']) != 0]}
 
 
@@ -110,25 +126,13 @@ class Pynance:
 
 
     def market_data(self, symbol:str, periods=None):
-        
-        endpoint = "/api/v3/ticker/price"
-
-        url = (
-            self.URL + endpoint 
-        )
-        params = {
-            "url" : url,
-            "params" : {
-                "symbol" : symbol
-            }
-        }
 
         dict = {symbol:[]}
         for lag in range(periods):
 
             begin = time.time()
 
-            response = Client().base_request("GET",signed=False)(**params).json()
+            response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/ticker/price",params={"symbol":symbol})
             price = response["price"]
             timestamp = Client().get_timestamp()
 
@@ -138,8 +142,6 @@ class Pynance:
             print(end - begin)
             
 
-
-
         with open("../results/"+symbol+"_price.json", 'w') as file:
             file.write(json.dumps(dict, indent=4))
     
@@ -148,28 +150,20 @@ class Pynance:
             self,
             symbol:str,
             intervals:str,
-            **kwargs
-    ):
-        endpoint = "/api/v3/klines"
-        url = (
-            self.URL + endpoint
-        )
-        params = {
-            "url": url,
-            "params": {
-                "symbol": symbol,
-                "interval": intervals 
-            }
-        }
-        
+            limit:int = None
+    ):  
+
         data = {symbol:[]}
-        keys = ["openTime","OpenPrice","HighPrice","LowPrice","ClosePrice","Volume","CloseTime","QuoteAssetVolume","nTrades"]
-        response = Client().base_request("GET",signed=False)(**params).json()
+        keys = ["openTime","OpenPrice","HighPrice","LowPrice","ClosePrice","Volume","closeTime","QuoteAssetVolume","nTrades"]
+        response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/klines",params={"symbol":symbol,"interval":intervals,"limit":limit})
         
         for row in response:
             dict = {}
             for i,key in enumerate(keys):
-                dict[key] = row[i]
+                if key in ("openTime","closeTime"):
+                    dict[key] = datetime.utcfromtimestamp(int(row[i])/1000).strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    dict[key] = row[i]
             data[symbol].append(dict)
 
         
@@ -180,4 +174,4 @@ class Pynance:
 
 if __name__=="__main__":
     
-    Pynance().candlestick_data(symbol="ETHUSDT",intervals="1s")
+    Pynance().market_data(symbol="BTCUSDT",periods=20)

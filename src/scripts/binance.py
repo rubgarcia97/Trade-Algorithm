@@ -88,7 +88,7 @@ class Client:
                 "url" : url,
                 "params" : params
             }
-            
+
             session = requests.Session()
             return {
                 "GET" : session.get,
@@ -125,21 +125,26 @@ class Pynance:
             file.write(json.dumps(response, indent=4))
 
 
-    def market_data(self, symbol:str, periods=None):
+    def market_data(self, symbol:str,interval:int, lags=None):
 
         dict = {symbol:[]}
-        for lag in range(periods):
+        for lag in range(lags):
 
             begin = time.time()
 
             response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/ticker/price",params={"symbol":symbol})
+            timestamp = datetime.utcfromtimestamp(Client().get_timestamp()/1000).strftime('%Y-%m-%d %H:%M:%S')
             price = response["price"]
-            timestamp = Client().get_timestamp()
 
-            dict[symbol].append({"price": price, "timestamp":timestamp})
+            dict[symbol].append({"timestamp":timestamp,"price": price})
 
             end = time.time()
-            print(end - begin)
+            
+            try:
+                time.sleep(interval-end+begin)
+            except: 
+                continue
+            
             
 
         with open("../results/"+symbol+"_price.json", 'w') as file:
@@ -151,11 +156,11 @@ class Pynance:
             symbol:str,
             intervals:str,
             limit:int = None
-    ):  
+    ) -> json:  
 
         data = {symbol:[]}
         keys = ["openTime","OpenPrice","HighPrice","LowPrice","ClosePrice","Volume","closeTime","QuoteAssetVolume","nTrades"]
-        response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/klines",params={"symbol":symbol,"interval":intervals,"limit":limit})
+        response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/uiKlines",params={"symbol":symbol,"interval":intervals,"limit":limit})
         
         for row in response:
             dict = {}
@@ -174,4 +179,5 @@ class Pynance:
 
 if __name__=="__main__":
     
-    Pynance().market_data(symbol="BTCUSDT",periods=20)
+    #Pynance().market_data(symbol="BTCUSDT",lags=25,interval=1)
+    Pynance().candlestick_data("BTCUSDT",intervals="1h",limit=720)

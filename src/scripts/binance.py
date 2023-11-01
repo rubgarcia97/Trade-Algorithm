@@ -125,7 +125,7 @@ class Pynance:
             file.write(json.dumps(response, indent=4))
 
 
-    def market_data(self, symbol:str,interval:int, lags=None):
+    def market_data(self, symbol:str,interval:int,save:bool, lags=None):
 
         dict = {symbol:[]}
         for lag in range(lags):
@@ -146,9 +146,11 @@ class Pynance:
                 continue
             
             
-
-        with open("../results/"+symbol+"_price.json", 'w') as file:
-            file.write(json.dumps(dict, indent=4))
+        if save:
+            with open("../results/"+symbol+"_price.json", 'w') as file:
+                file.write(json.dumps(dict, indent=4))
+        else:
+            return dict
     
 
     def candlestick_data(
@@ -179,5 +181,5 @@ class Pynance:
 
 if __name__=="__main__":
     
-    #Pynance().market_data(symbol="BTCUSDT",lags=25,interval=1)
-    Pynance().candlestick_data("BTCUSDT",intervals="1h",limit=720)
+    Pynance().market_data(symbol="BTCUSDT",lags=1,interval=1)
+    #Pynance().candlestick_data("BTCUSDT",intervals="1h",limit=720)

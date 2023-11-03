@@ -62,10 +62,10 @@ class Client:
             url = (
                 self.URL + endpoint + "?" + query_string + "&signature=" + Client().signature(query_string)
             )
-
+            print(f"{http_method} {url}")
             params = {
                 "url": url,
-                "params": load_params
+                #"params": load_params
             }
 
             session = requests.Session()
@@ -112,6 +112,17 @@ class Pynance:
 
         # Acceso a los datos generados por signature.Client
         self.client = Client()
+
+
+    def exchange_information (self,
+                              symbol:str)->json:
+        
+        response = Client().base_request(http_method="GET",signed=False,endpoint="/api/v3/exchangeInfo",params={"symbol":symbol})
+
+        with open("../results/info_"+symbol+".json", 'w') as file:
+            file.write(json.dumps(response, indent=4))
+
+        print(response)
         
     
 
@@ -153,12 +164,10 @@ class Pynance:
             return dict
     
 
-    def candlestick_data(
-            self,
-            symbol:str,
-            intervals:str,
-            limit:int = None
-    ) -> json:  
+    def candlestick_data(self,
+                        symbol:str,
+                        intervals:str,
+                        limit:int = None) -> json:  
 
         data = {symbol:[]}
         keys = ["openTime","OpenPrice","HighPrice","LowPrice","ClosePrice","Volume","closeTime","QuoteAssetVolume","nTrades"]
@@ -176,10 +185,33 @@ class Pynance:
         
         with open("../results/"+symbol+"_candlestick.json", 'w') as file:
             file.write(json.dumps(data, indent=4))
+
+
+    def spot_order(self,
+                   params:dict) -> json: 
+        
+        begin=time.time()
+        response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order/test",params=params)
+        end=time.time()
+        print(end-begin)
+        print(response)
+
+        with open("../results/firstbuy.json", 'w') as file:
+            file.write(json.dumps(response, indent=4))
+
         
         
 
 if __name__=="__main__":
     
-    Pynance().market_data(symbol="BTCUSDT",lags=1,interval=1)
-    #Pynance().candlestick_data("BTCUSDT",intervals="1h",limit=720)
+
+    params = {
+        "symbol":"BTCUSDT",
+        "side":"BUY",
+        "type":"MARKET",
+        "quoteOrderQty":5
+    }
+    
+    Pynance().spot_order(params=params)
+    print(Pynance().market_data(symbol="BTCUSDT",interval=1,save=False,lags=1))
+    

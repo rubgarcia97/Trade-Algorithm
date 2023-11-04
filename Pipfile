@@ -9,6 +9,7 @@ requests = "*"
 pandas = "*"
 plotly = "*"
 nbformat = "*"
+customtkinter = "*"
 
 [dev-packages]
 ipykernel = "*"

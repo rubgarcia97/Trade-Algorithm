@@ -1,4 +1,5 @@
 from binance import Pynance
+from gui import GUI
 from datetime import datetime
 from tkinter import *
 
@@ -9,10 +10,10 @@ import time
 import customtkinter
 import threading
 
-
+now = datetime.now().strftime("%d-%m-%Y_%H%M%S")
 stop = None
 
-def strategy_1(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bool):
+def strategy_1beta(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bool):
 
 
     """
@@ -39,7 +40,7 @@ def strategy_1(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bool):
     results = pd.DataFrame(columns=['wallet'])
 
     while stop is None:
-    #for lag in range(lags):
+    
         result = Pynance().market_data(symbol=symbol,lags=1,interval=interval,save=False)
 
         symbol_data = result[symbol][0]
@@ -84,8 +85,8 @@ def strategy_1(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bool):
         
 
     if save:
-        data.to_csv("../results/strategy_1/strategy_1_raw.csv", index=True)
-        results.to_csv("../results/strategy_1/strategy_1_results.csv", index=True)
+        data.to_csv("../results/strategy_1beta/strategy_1beta_raw_"+str(now)+".csv", index=True)
+        results.to_csv("../results/strategy_1beta/strategy_1beta_results_"+str(now)+".csv", index=True)
     else:
         pass
 
@@ -95,27 +96,18 @@ def cerrar_ventana():
     stop = "exit"
 
     print(f"Repliegue de las tropas a las: {datetime.now()}")
-    root.quit()
+    GUI.root.quit()
     
 
 def iniciar_estrategia():
     global stop
     stop = None
     print(f"El general Trajano ha desplegado sus legiones a las: {datetime.now()}")
-    threading.Thread(target=strategy_1, args=("BTCUSDT",100, 1, 25, True)).start()
+    threading.Thread(target=strategy_1beta, args=("BTCUSDT",100, 1, 25, True)).start()
 
 
 if __name__=="__main__":
 
-    root = customtkinter.CTk()
-    root.geometry("300x100")
-    root.title("Trajano")
+    GUI().gui(inicio=iniciar_estrategia,detener=cerrar_ventana)
 
-    boton_iniciar = customtkinter.CTkButton(master=root,text="Iniciar",command=iniciar_estrategia)
-    boton_iniciar.place(relx=0.25, rely=0.5, anchor = CENTER)
-
-    boton_detener = customtkinter.CTkButton(master=root,text="Detener",command=cerrar_ventana)
-    boton_detener.place(relx=0.75, rely=0.5, anchor = CENTER)
-
-    root.mainloop()
 

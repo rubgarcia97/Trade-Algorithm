@@ -190,13 +190,12 @@ class Pynance:
     def spot_order(self,
                    params:dict) -> json: 
         
-        begin=time.time()
-        response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order/test",params=params)
-        end=time.time()
-        print(end-begin)
+        
+        response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order",params=params)
+
         print(response)
 
-        with open("../results/firstbuy.json", 'w') as file:
+        with open("../results/firstsell.json", 'w') as file:
             file.write(json.dumps(response, indent=4))
 
         
@@ -207,11 +206,10 @@ if __name__=="__main__":
 
     params = {
         "symbol":"BTCUSDT",
-        "side":"BUY",
+        "side":"SELL",
         "type":"MARKET",
-        "quoteOrderQty":5
+        "quoteOrderQty":5.12
     }
     
     Pynance().spot_order(params=params)
-    print(Pynance().market_data(symbol="BTCUSDT",interval=1,save=False,lags=1))
     

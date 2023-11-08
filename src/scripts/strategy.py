@@ -13,7 +13,7 @@ import threading
 now = datetime.now().strftime("%d-%m-%Y_%H%M%S")
 stop = None
 
-def strategy_1beta(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bool):
+def strategy_1beta(symbol:str, interval:int, SMA_periods:int, save:bool):
 
 
     """
@@ -31,13 +31,13 @@ def strategy_1beta(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bo
 
     global stop
 
-    wallet = wallet
+    #wallet = wallet
     prev_signal = None
 
     MA = f"MA_{SMA_periods}"
 
     data = pd.DataFrame(columns=['price',MA,"signal"])
-    results = pd.DataFrame(columns=['wallet'])
+    results = pd.DataFrame(columns=['amount'])
 
     while stop is None:
     
@@ -58,17 +58,30 @@ def strategy_1beta(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bo
         )
 
         if data.loc[timestamp,'signal'] == "buy" and prev_signal != "buy":
-            wallet = np.divide(wallet,data.loc[timestamp,"price"])
-            prev_signal = data.loc[timestamp,'signal']
+            response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"BUY","type":"MARKET","quoteOrderQty":5})
+            #wallet = np.divide(wallet,data.loc[timestamp,"price"])
+            if len(response)>2:
+                prev_signal = data.loc[timestamp,'signal']               
 
-            results.loc[timestamp] = wallet * data.loc[timestamp,"price"]
+            else:
+                continue
 
 
         elif data.loc[timestamp,'signal'] == "sell" and prev_signal not in ["sell",None]:
-            wallet = np.multiply(wallet,data.loc[timestamp,"price"])
-            prev_signal = data.loc[timestamp,'signal']
+                response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"SELL","type":"MARKET","quoteOrderQty":5})
 
-            results.loc[timestamp] = wallet
+                if len(response)>2:
+                    prev_signal = data.loc[timestamp,'signal']
+
+                    transact_time = response['transactTime']
+                    transact_time = datetime.utcfromtimestamp(transact_time/1000).strftime('%Y-%m-%d %H:%M:%S')
+                    amount = Pynance().wallet(save=False)
+                    amount = float(amount['balances'][0]['free'])
+
+                    results.loc[transact_time] = amount
+
+                else:
+                    continue
 
         else:
             continue
@@ -85,8 +98,8 @@ def strategy_1beta(symbol:str,wallet:int, interval:int, SMA_periods:int, save:bo
         
 
     if save:
-        data.to_csv("../results/strategy_1beta/strategy_1beta_raw_"+str(now)+".csv", index=True)
-        results.to_csv("../results/strategy_1beta/strategy_1beta_results_"+str(now)+".csv", index=True)
+        data.to_csv("../results/strategy_1/strategy_1beta_raw_"+str(now)+".csv", index=True)
+        results.to_csv("../results/strategy_1/strategy_1beta_results_"+str(now)+".csv", index=True)
     else:
         pass
 
@@ -103,7 +116,7 @@ def iniciar_estrategia():
     global stop
     stop = None
     print(f"El general Trajano ha desplegado sus legiones a las: {datetime.now()}")
-    threading.Thread(target=strategy_1beta, args=("BTCUSDT",100, 1, 25, True)).start()
+    threading.Thread(target=strategy_1beta, args=("BTCUSDT", 1, 25, True)).start()
 
 
 if __name__=="__main__":

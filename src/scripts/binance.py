@@ -126,14 +126,17 @@ class Pynance:
         
     
 
-    def wallet(self):
+    def wallet(self,save:bool):
 
         response = Client().base_request(http_method="GET",signed=True,endpoint="/api/v3/account")
         response = {'balances' : [balance for balance in response['balances'] if float(balance['free']) != 0]}
 
 
-        with open("../results/wallet.json", 'w') as file:
-            file.write(json.dumps(response, indent=4))
+        if save:
+            with open("../results/wallet.json", 'w') as file:
+                file.write(json.dumps(response, indent=4))
+        else:
+            return response
 
 
     def market_data(self, symbol:str,interval:int,save:bool, lags=None):
@@ -193,10 +196,11 @@ class Pynance:
         
         response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order",params=params)
 
-        print(response)
-
+        return response
+        '''
         with open("../results/firstsell.json", 'w') as file:
             file.write(json.dumps(response, indent=4))
+        '''
 
         
         
@@ -204,6 +208,11 @@ class Pynance:
 if __name__=="__main__":
     
 
+    response = Pynance().wallet(save=False)
+    print(response['balances'][0]['free'])
+
+
+    '''
     params = {
         "symbol":"BTCUSDT",
         "side":"SELL",
@@ -212,4 +221,5 @@ if __name__=="__main__":
     }
     
     Pynance().spot_order(params=params)
+    '''
     

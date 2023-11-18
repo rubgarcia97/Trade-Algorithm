@@ -10,6 +10,7 @@ pandas = "*"
 plotly = "*"
 nbformat = "*"
 customtkinter = "*"
+openpyxl = "*"
 
 [dev-packages]
 ipykernel = "*"

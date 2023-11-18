@@ -7,7 +7,8 @@ import hmac
 import urllib
 import hashlib
 import time
-#import datetime
+import pandas as pd
+import math
 
 class Client:
 
@@ -207,19 +208,25 @@ class Pynance:
 
 if __name__=="__main__":
     
+    
+    #response = Pynance().wallet(save=True)
+    wallet = Pynance().wallet(save=False)
+    wallet_df = pd.DataFrame(wallet["balances"])
+    free = wallet_df[wallet_df["asset"] == "BTC"]["free"].values[0]
+    free = round(float(free),5)
+    print(free)
+    #free = math.floor(float(free)*10000)/10000
 
-    response = Pynance().wallet(save=False)
-    print(response['balances'][0]['free'])
-
-
-    '''
     params = {
         "symbol":"BTCUSDT",
         "side":"SELL",
         "type":"MARKET",
-        "quoteOrderQty":5.12
+        "quantity":float(free)
     }
     
-    Pynance().spot_order(params=params)
-    '''
+    response = Pynance().spot_order(params=params)
+    print(response)
+
+
+    
     

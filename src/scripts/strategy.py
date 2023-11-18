@@ -9,6 +9,7 @@ import json
 import time
 import customtkinter
 import threading
+import math
 
 now = datetime.now().strftime("%d-%m-%Y_%H%M%S")
 stop = None
@@ -30,14 +31,15 @@ def strategy_1beta(symbol:str, interval:int, SMA_periods:int, save:bool):
     """
 
     global stop
+    global wallet
 
-    #wallet = wallet
+    wallet = 8
     prev_signal = None
 
     MA = f"MA_{SMA_periods}"
 
     data = pd.DataFrame(columns=['price',MA,"signal"])
-    results = pd.DataFrame(columns=['amount'])
+    results = pd.DataFrame(columns=['timestamp','signal','price','qty','total','fee','wallet']).set_index('timestamp')
 
     while stop is None:
     
@@ -58,17 +60,69 @@ def strategy_1beta(symbol:str, interval:int, SMA_periods:int, save:bool):
         )
 
         if data.loc[timestamp,'signal'] == "buy" and prev_signal != "buy":
-            response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"BUY","type":"MARKET","quoteOrderQty":5})
+
+            price = data.loc[timestamp,"price"]
+            prev_signal = data.loc[timestamp,"signal"]
+            
+            qty_buy = math.floor(wallet/(price*0.00001))*0.00001
+            total_buy = price * qty_buy
+            fee_buy = total_buy*0.00100
+
+            wallet = qty_buy-(qty_buy*0.00100)
+
+            dict={
+                'signal' : data.loc[timestamp,'signal'],
+                'price' : price,
+                'qty' : qty_buy,
+                'total': total_buy,
+                'fee' : fee_buy,
+                'wallet' : wallet
+            }
+            results.loc[timestamp] = dict
+            print(dict)
+
+
+            '''Funcional
+            response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"BUY","type":"MARKET","quoteOrderQty":8})
             #wallet = np.divide(wallet,data.loc[timestamp,"price"])
             if len(response)>2:
                 prev_signal = data.loc[timestamp,'signal']               
 
             else:
                 continue
+            '''
 
 
         elif data.loc[timestamp,'signal'] == "sell" and prev_signal not in ["sell",None]:
-                response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"SELL","type":"MARKET","quoteOrderQty":5})
+                
+                price = data.loc[timestamp,"price"]
+                prev_signal = data.loc[timestamp,"signal"]
+                
+                qty_sell = round(wallet,5)
+                total_sell = price * qty_sell
+                fee_sell = total_sell*0.00100
+
+                wallet = total_sell - fee_sell
+
+                dict={
+                    'signal' : data.loc[timestamp,'signal'],
+                    'price' : price,
+                    'qty' : qty_sell,
+                    'total': total_sell,
+                    'fee' : fee_sell,
+                    'wallet' : wallet
+                }
+                results.loc[timestamp]=dict
+                print(dict)
+
+
+                '''Funcional
+                wallet = Pynance().wallet(save=False)
+                wallet_df = pd.DataFrame(wallet["balances"])
+                free = wallet_df[wallet_df["asset"] == "BTC"]["free"].values[0]
+                free = math.floor(float(free)*10000)/10000
+
+                response = Pynance().spot_order(params={"symbol":"BTCUSDT","side":"SELL","type":"MARKET","quantity":free})
 
                 if len(response)>2:
                     prev_signal = data.loc[timestamp,'signal']
@@ -82,6 +136,7 @@ def strategy_1beta(symbol:str, interval:int, SMA_periods:int, save:bool):
 
                 else:
                     continue
+                '''
 
         else:
             continue
@@ -90,8 +145,8 @@ def strategy_1beta(symbol:str, interval:int, SMA_periods:int, save:bool):
         pass
 
     #calculate profitability
-    t0 = results.iloc[0,0]
-    t1 = results.iloc[-1,0]
+    t0 = results["total"].iloc[0]
+    t1 = results["total"].iloc[-1]
 
     rentabilidad = (t1 - t0)/t0
     print(format(rentabilidad, ".2%"))
@@ -116,7 +171,7 @@ def iniciar_estrategia():
     global stop
     stop = None
     print(f"El general Trajano ha desplegado sus legiones a las: {datetime.now()}")
-    threading.Thread(target=strategy_1beta, args=("BTCUSDT", 1, 25, True)).start()
+    threading.Thread(target=strategy_1beta, args=("BTCUSDT", 1,25, True)).start()
 
 
 if __name__=="__main__":

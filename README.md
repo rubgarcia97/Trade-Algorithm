@@ -1,4 +1,4 @@
-# Crypto Trading Bot
+# Trajano Trade Algorithm
 
 ## Descripción
 

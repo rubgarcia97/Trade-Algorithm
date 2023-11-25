@@ -1,0 +1,4 @@
+estrategias:
+  - nombre: strategy_1beta
+  - nombre: SMA_25_strategy
+  - nombre: cross_RSI_7

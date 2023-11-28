@@ -11,6 +11,8 @@ plotly = "*"
 nbformat = "*"
 customtkinter = "*"
 openpyxl = "*"
+tk = "*"
+pyyaml = "*"
 
 [dev-packages]
 ipykernel = "*"

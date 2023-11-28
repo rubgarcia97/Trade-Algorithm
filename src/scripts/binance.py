@@ -195,7 +195,7 @@ class Pynance:
                    params:dict) -> json: 
         
         
-        response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order",params=params)
+        response = Client().base_request(http_method="POST",signed=True,endpoint="/api/v3/order/test",params=params)
 
         return response
         '''
@@ -207,21 +207,12 @@ class Pynance:
         
 
 if __name__=="__main__":
-    
-    
-    #response = Pynance().wallet(save=True)
-    wallet = Pynance().wallet(save=False)
-    wallet_df = pd.DataFrame(wallet["balances"])
-    free = wallet_df[wallet_df["asset"] == "BTC"]["free"].values[0]
-    free = round(float(free),5)
-    print(free)
-    #free = math.floor(float(free)*10000)/10000
 
     params = {
         "symbol":"BTCUSDT",
         "side":"SELL",
         "type":"MARKET",
-        "quantity":float(free)
+        "quantity":5
     }
     
     response = Pynance().spot_order(params=params)

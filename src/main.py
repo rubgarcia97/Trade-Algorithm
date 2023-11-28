@@ -14,6 +14,11 @@ def iniciar_estrategia():
     stop = None
     print(f"El general Trajano ha desplegado sus legiones")
 
+def iniciar_test():
+    global stop
+    stop = None
+    print("Iniciamos Test...")
 
 
-GUI().gui(inicio=iniciar_estrategia,detener=cerrar_ventana)
+
+GUI().gui(inicio=iniciar_estrategia,detener=cerrar_ventana, test=iniciar_test)

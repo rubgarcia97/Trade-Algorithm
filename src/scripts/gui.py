@@ -23,10 +23,18 @@ class GUI:
         estrategias_data = yaml.safe_load(file)
 
     strategies = [estrategia["nombre"] for estrategia in estrategias_data["estrategias"]]
-    
+    choice = None
 
     def __init__(self):
         pass
+
+    @classmethod
+    def update_choice(cls,new_choice):
+        cls.choice = new_choice
+
+
+    def combobox_callback(self,choice):
+        GUI.update_choice(choice)
 
 
     def gui(self,inicio,detener,test):
@@ -41,14 +49,13 @@ class GUI:
         self.root.geometry("375x568")
         self.root.title("Trajano")
 
-        def combobox_callback(choice):
-            print("combobox dropdown clicked:",choice)
-
-        combobox = customtkinter.CTkComboBox(self.root,width=200,values=self.strategies, command=combobox_callback)
-        combobox.place(relx=0.1,rely=0.05)
+        customtkinter.set_appearance_mode("dark")
+        customtkinter.set_default_color_theme("./config/theme.json")
+        
 
 
-        frame = customtkinter.CTkFrame(master=self.root)
+        #CONSOLE BOX
+        frame = customtkinter.CTkFrame(master=self.root) #Build "console box" appearance at bottom of the screen 
         frame.pack(side="bottom",fill=BOTH,expand=False)
 
         console_text = customtkinter.CTkTextbox(frame, wrap=tk.WORD, width=500, height=180)
@@ -56,6 +63,14 @@ class GUI:
         console_text.configure(scrollbar_button_color="", scrollbar_button_hover_color="") #Make scroll-bar invisible
         font_spec = ("Cascadia Code", 12)  # Font family and size
 
+        sys.stdout = ConsoleRedirector(console_text) #Redirect the output of console system to "Console text"
+        sys.stderr = ConsoleRedirector(console_text)
+
+
+        #BOTONES
+
+        combobox = customtkinter.CTkComboBox(self.root,width=200,values=self.strategies, command=self.combobox_callback)
+        combobox.place(relx=0.1,rely=0.05)
 
         boton_test = customtkinter.CTkButton(height=20,width=70,master=self.root,text="Test",command=test)
         boton_test.place(relx=0.1, rely=0.6, anchor = CENTER)
@@ -66,8 +81,5 @@ class GUI:
         boton_detener = customtkinter.CTkButton(height=20,width=70,master=self.root,text="Detener",command=detener)
         boton_detener.place(relx=0.88, rely=0.6, anchor = CENTER)
 
-
-        sys.stdout = ConsoleRedirector(console_text)
-        sys.stderr = ConsoleRedirector(console_text)
 
         self.root.mainloop()

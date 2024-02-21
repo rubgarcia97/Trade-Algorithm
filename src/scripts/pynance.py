@@ -142,8 +142,7 @@ class Pynance:
 
     def market_data(self, symbol:str,interval:int,save:bool, lags=None):
 
-        start =time.time()
-        dict = {symbol:[]}
+        dict = {}
         for lag in range(lags):
 
             begin = time.time()
@@ -152,7 +151,8 @@ class Pynance:
             timestamp = datetime.utcfromtimestamp(Client().get_timestamp()/1000).strftime('%Y-%m-%d %H:%M:%S')
             price = response["price"]
 
-            dict[symbol].append({"timestamp":timestamp,"price": price})
+            dict["timestamp"] = timestamp
+            dict["price"] = price
 
             end = time.time()
 
@@ -160,8 +160,6 @@ class Pynance:
                 time.sleep(interval-end+begin)
             except: 
                 continue
-        finish = time.time()
-        print(finish-start)
                        
         if save:
             with open("../results/"+symbol+"_price.json", 'w') as file:
@@ -204,6 +202,10 @@ class Pynance:
         with open("../results/firstsell.json", 'w') as file:
             file.write(json.dumps(response, indent=4))
         '''
+
+    def build_dataframe():
+
+        df = pd.DataFrame(columns=["price"])
         
 
 if __name__=="__main__":
@@ -216,7 +218,7 @@ if __name__=="__main__":
     }
     
     response = Pynance().market_data(symbol="BTCUSDT",interval=1,save=False,lags=1)
-    print(response)
+    print(pd.DataFrame([response]))
 
 
     
